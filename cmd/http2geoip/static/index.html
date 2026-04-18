@@ -1,0 +1,1490 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" sizes="512x512" href="/favicon.png">
+<title>GeoIP — CERT</title>
+<style>
+  /* ── THEMES ── */
+  :root {
+    --bg:             #0a0e14;
+    --surface:        #0f1520;
+    --border:         #1e2d45;
+    --border-hi:      #2a4060;
+    --accent:         #00d4ff;
+    --accent2:        #0090cc;
+    --accent-dim:     #003a52;
+    --text:           #c8d8e8;
+    --text-dim:       #4a6480;
+    --text-mid:       #7a9ab8;
+    --ok:             #00b87a;
+    --ok-dim:         #003d2a;
+    --warn:           #ffb340;
+    --warn-dim:       #3d2a00;
+    --err:            #ff4e6a;
+    --err-dim:        #3d0010;
+    --grid-a:         rgba(30,45,69,0.30);
+    --grid-b:         rgba(30,45,69,0.15);
+    --radial:         rgba(0,180,255,0.07);
+    --panel-tint:     rgba(0,212,255,0.04);
+    --select-opt-bg:  #0f1520;
+    --raw-bg:         #070b10;
+    --focus-ring:     #00d4ff;
+    --mono: 'Courier New', 'Lucida Console', monospace;
+    --sans: system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+  }
+
+  [data-theme="light"] {
+    --bg:             #eef3f9;
+    --surface:        #ffffff;
+    --border:         #c8d8ec;
+    --border-hi:      #a0bcd8;
+    --accent:         #0070a0;
+    --accent2:        #005278;
+    --accent-dim:     #d4eaf8;
+    --text:           #152030;
+    --text-dim:       #7898b8;
+    --text-mid:       #3a6080;
+    --ok:             #006e48;
+    --ok-dim:         #d0f0e4;
+    --warn:           #8c5200;
+    --warn-dim:       #fff0d0;
+    --err:            #b0002a;
+    --err-dim:        #fde8ef;
+    --grid-a:         rgba(150,190,225,0.28);
+    --grid-b:         rgba(150,190,225,0.14);
+    --radial:         rgba(0,120,180,0.06);
+    --panel-tint:     rgba(0,112,160,0.04);
+    --select-opt-bg:  #ffffff;
+    --raw-bg:         #f4f8fc;
+    --focus-ring:     #005278;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* ── SKIP LINK ── */
+  .skip-link {
+    position: absolute; top: -100px; left: 16px; z-index: 9999;
+    background: var(--accent); color: var(--bg);
+    font-family: var(--mono); font-size: 0.85rem; font-weight: 700;
+    padding: 10px 18px; border-radius: 0 0 6px 6px;
+    text-decoration: none; letter-spacing: 0.08em; transition: top 0.2s;
+  }
+  .skip-link:focus { top: 0; outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+
+  :focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 3px; border-radius: 3px; }
+  :focus:not(:focus-visible) { outline: none; }
+
+  body {
+    background: var(--bg); color: var(--text); font-family: var(--sans);
+    min-height: 100vh; display: flex; flex-direction: column;
+    align-items: center; padding: 0 16px 60px;
+    background-image:
+      radial-gradient(ellipse 80% 40% at 50% -10%, var(--radial) 0%, transparent 70%),
+      repeating-linear-gradient(0deg,  transparent, transparent 39px, var(--grid-a) 40px),
+      repeating-linear-gradient(90deg, transparent, transparent 39px, var(--grid-b) 40px);
+    transition: background 0.3s, color 0.3s;
+  }
+
+  /* ── RTL ── */
+  [dir="rtl"] .panel-head::before { margin-left: 10px; margin-right: 0; }
+  [dir="rtl"] .lang-arrow         { left: 8px; right: auto; }
+  [dir="rtl"] .lang-select        { padding: 5px 10px 5px 26px; }
+  [dir="rtl"] select              { background-position: left 12px center; padding-left: 32px; padding-right: 12px; }
+  [dir="rtl"] .result-time        { margin-left: 0; margin-right: auto; }
+  [dir="rtl"] .theme-toggle       { flex-direction: row-reverse; }
+  [dir="rtl"] .geo-field-label    { text-align: right; }
+
+  /* ── HEADER ── */
+  header {
+    width: 100%; max-width: 900px;
+    padding: 32px 0 24px; display: flex; align-items: center; gap: 16px;
+    border-bottom: 1px solid var(--border); margin-bottom: 32px;
+    transition: border-color 0.3s;
+  }
+  .logo-shield { width: 38px; height: 42px; flex-shrink: 0; }
+  .logo-shield path   { fill: none; stroke: var(--accent); stroke-width: 1.5; stroke-linejoin: round; transition: stroke 0.3s; }
+  .logo-shield circle { fill: var(--accent); opacity: 0.9; transition: fill 0.3s; }
+  .logo-shield line   { stroke: var(--accent); stroke-width: 1.5; stroke-linecap: round; transition: stroke 0.3s; }
+
+  .header-text h1 {
+    font-family: var(--mono); font-size: 1.05rem; font-weight: 600;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--accent); transition: color 0.3s;
+  }
+  .header-text p {
+    font-size: 0.68rem; font-weight: 400; color: var(--text-dim);
+    letter-spacing: 0.07em; text-transform: uppercase; margin-top: 3px;
+    transition: color 0.3s;
+  }
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+  /* ── THEME TOGGLE ── */
+  .theme-toggle {
+    display: flex; align-items: center; gap: 7px; cursor: pointer;
+    border: 1px solid var(--border); background: transparent; border-radius: 20px;
+    padding: 5px 11px 5px 8px;
+    transition: border-color 0.2s, background 0.2s, color 0.2s; color: var(--text-dim);
+  }
+  .theme-toggle:hover, .theme-toggle:focus-visible {
+    border-color: var(--accent2); background: var(--accent-dim); color: var(--accent);
+  }
+  .theme-icon { font-size: 0.85rem; line-height: 1; transition: transform 0.4s; }
+  .theme-toggle:hover .theme-icon { transform: rotate(20deg); }
+  .theme-track { width: 28px; height: 15px; background: var(--border); border-radius: 8px; position: relative; flex-shrink: 0; transition: background 0.3s; }
+  .theme-thumb { position: absolute; top: 2px; left: 2px; width: 11px; height: 11px; border-radius: 50%; background: var(--text-dim); transition: transform 0.3s, background 0.3s; }
+  [data-theme="light"] .theme-track { background: var(--accent2); }
+  [data-theme="light"] .theme-thumb { background: #fff; transform: translateX(13px); }
+  .theme-label { font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; }
+
+  /* ── LANGUAGE SELECTOR ── */
+  .lang-select-wrap { position: relative; display: flex; align-items: center; }
+  .lang-select {
+    appearance: none; -webkit-appearance: none; background: transparent;
+    border: 1px solid var(--border); border-radius: 4px; color: var(--text-dim);
+    font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.08em;
+    padding: 5px 26px 5px 10px; cursor: pointer; outline: none;
+    transition: border-color 0.2s, background 0.2s, color 0.2s; width: auto;
+  }
+  .lang-select:hover, .lang-select:focus-visible {
+    border-color: var(--accent2); background: var(--accent-dim); color: var(--accent);
+    outline: 2px solid var(--focus-ring); outline-offset: 2px;
+  }
+  .lang-select option { background: var(--select-opt-bg); color: var(--text); }
+  .lang-arrow { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--text-dim); font-size: 0.55rem; transition: color 0.2s; }
+  .lang-select-wrap:hover .lang-arrow { color: var(--accent); }
+
+  /* ── MAIN ── */
+  main { width: 100%; max-width: 900px; }
+
+  .panel {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 6px; overflow: hidden; margin-bottom: 20px;
+    transition: background 0.3s, border-color 0.3s;
+  }
+  .panel-head {
+    padding: 10px 18px; background: var(--panel-tint); border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px; font-family: var(--mono);
+    font-size: 0.66rem; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--text-dim); transition: background 0.3s, border-color 0.3s, color 0.3s;
+  }
+  .panel-head::before {
+    content: ''; display: inline-block; width: 3px; height: 12px;
+    background: var(--accent); border-radius: 2px; flex-shrink: 0; transition: background 0.3s;
+  }
+  .panel-body { padding: 20px 22px; }
+
+  /* ── FORM ── */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 20px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group.full { grid-column: 1 / -1; }
+
+  label {
+    font-family: var(--mono); font-size: 0.63rem; font-weight: 500;
+    letter-spacing: 0.13em; text-transform: uppercase; color: var(--text-dim);
+    transition: color 0.3s; cursor: pointer;
+  }
+
+  input, select, textarea {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); font-family: var(--mono); font-size: 0.85rem;
+    padding: 9px 12px; outline: none; width: 100%;
+    appearance: none; -webkit-appearance: none;
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.3s, color 0.3s;
+    min-height: 44px;
+  }
+  input:focus-visible, select:focus-visible, textarea:focus-visible {
+    border-color: var(--accent2); box-shadow: 0 0 0 3px rgba(0,212,255,0.25); outline: none;
+  }
+  input[aria-invalid="true"], textarea[aria-invalid="true"] {
+    border-color: var(--err); box-shadow: 0 0 0 2px rgba(255,78,106,0.2);
+  }
+  input::placeholder, textarea::placeholder { color: var(--text-dim); }
+  textarea { resize: vertical; min-height: 100px; line-height: 1.6; }
+
+  /* ── IP MODE TABS ── */
+  .ip-section { margin-top: 4px; }
+  .ip-tabs {
+    display: flex; border: 1px solid var(--border); border-radius: 4px;
+    overflow: hidden; margin-bottom: 12px; width: fit-content; transition: border-color 0.3s;
+  }
+  .ip-tab {
+    padding: 7px 15px; font-family: var(--mono); font-size: 0.66rem;
+    letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer;
+    border: none; background: transparent; color: var(--text-dim);
+    transition: all 0.18s; user-select: none; min-height: 44px;
+  }
+  .ip-tab[aria-selected="true"] { background: var(--accent-dim); color: var(--accent); }
+  .ip-tab:hover:not([aria-selected="true"]) { background: var(--panel-tint); color: var(--text-mid); }
+  .ip-tab:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; z-index: 1; }
+
+  .ip-pane { display: none; }
+  .ip-pane.active { display: block; }
+
+  .ip-hint {
+    margin-top: 6px; font-family: var(--mono); font-size: 0.63rem;
+    color: var(--text-dim); transition: color 0.3s;
+  }
+
+  /* ── SUBMIT ── */
+  .submit-row { margin-top: 22px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .btn-submit {
+    display: flex; align-items: center; gap: 9px;
+    background: var(--accent-dim); border: 1px solid var(--accent2); color: var(--accent);
+    font-family: var(--mono); font-size: 0.78rem; font-weight: 600;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    padding: 10px 26px; border-radius: 4px; cursor: pointer;
+    position: relative; overflow: hidden;
+    transition: background 0.2s, box-shadow 0.2s, border-color 0.3s, color 0.3s;
+    min-height: 44px;
+  }
+  .btn-submit::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(0,212,255,0.1), transparent);
+    transform: translateX(-100%); transition: transform 0.4s;
+  }
+  .btn-submit:hover::before { transform: translateX(100%); }
+  .btn-submit:hover { box-shadow: 0 0 20px rgba(0,144,204,0.2); filter: brightness(1.08); }
+  .btn-submit:active { transform: scale(0.98); }
+  .btn-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-submit:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 3px; }
+  .spinner {
+    display: none; width: 16px; height: 16px;
+    border: 2px solid rgba(0,144,204,0.2); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin 0.7s linear infinite;
+  }
+  .loading .spinner { display: block; }
+  .loading .send-icon { display: none; }
+  .query-hint { font-family: var(--mono); font-size: 0.67rem; color: var(--text-dim); }
+  .query-hint[role="alert"] { color: var(--warn); }
+
+  /* ── RESULTS ── */
+  #results-panel { display: none; }
+  .result-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+  .badge {
+    font-family: var(--mono); font-size: 0.63rem; font-weight: 600;
+    letter-spacing: 0.12em; text-transform: uppercase; padding: 3px 10px; border-radius: 3px;
+  }
+  .badge-success  { background: var(--ok-dim);   color: var(--ok);   border: 1px solid var(--ok);   }
+  .badge-error    { background: var(--err-dim);  color: var(--err);  border: 1px solid var(--err);  }
+  .badge-notfound { background: var(--warn-dim); color: var(--warn); border: 1px solid var(--warn); }
+  .result-query-str { font-family: var(--mono); font-size: 0.72rem; color: var(--text-mid); transition: color 0.3s; }
+  .result-time { margin-left: auto; font-family: var(--mono); font-size: 0.67rem; color: var(--text-dim); transition: color 0.3s; }
+
+  /* ── COPY CSV BUTTON ── */
+  .btn-copy {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: transparent; border: 1px solid var(--border);
+    border-radius: 4px; color: var(--text-dim);
+    font-family: var(--mono); font-size: 0.63rem; font-weight: 500;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 4px 11px; cursor: pointer; white-space: nowrap;
+    transition: border-color 0.2s, background 0.2s, color 0.2s;
+    min-height: 28px;
+  }
+  .btn-copy:hover { border-color: var(--accent2); background: var(--accent-dim); color: var(--accent); }
+  .btn-copy:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+  .btn-copy.copied { border-color: var(--ok); color: var(--ok); background: var(--ok-dim); }
+  .btn-copy svg { flex-shrink: 0; }
+
+  /* ── GEO TABLE ── */
+  .geo-table-wrap { overflow-x: auto; }
+  .geo-table {
+    width: 100%; border-collapse: collapse;
+    font-family: var(--mono); font-size: 0.8rem;
+  }
+  .geo-table thead tr { border-bottom: 1px solid var(--border-hi); }
+  .geo-table th {
+    text-align: left; padding: 6px 12px 8px;
+    font-size: 0.6rem; font-weight: 500; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--text-dim);
+    white-space: nowrap; transition: color 0.3s;
+  }
+  [dir="rtl"] .geo-table th { text-align: right; }
+  [dir="rtl"] .geo-table td { text-align: right; }
+  .geo-table td {
+    padding: 9px 12px; border-bottom: 1px solid var(--border);
+    vertical-align: middle; transition: background 0.15s, color 0.3s, border-color 0.3s;
+  }
+  .geo-table tr:last-child td { border-bottom: none; }
+  .geo-table tr:hover td { background: var(--panel-tint); }
+
+  /* Row status coloring */
+  .geo-table tr.row-notfound td { opacity: 0.6; }
+  .geo-table tr.row-notfound:hover td { background: rgba(61,42,0,0.18); }
+
+  /* Cell styles */
+  .td-ip {
+    font-weight: 600; color: var(--accent); white-space: nowrap;
+    transition: color 0.3s;
+  }
+  .td-ip.notfound { color: var(--warn); }
+
+  .td-status .badge { display: inline-block; }
+
+  /* Stacked cell: main value + sub label below it */
+  .cell-main  { display: block; }
+  .cell-sub   {
+    display: block; margin-top: 2px;
+    font-size: 0.67rem; color: var(--text-dim); transition: color 0.3s;
+  }
+  .cell-main.highlight { color: var(--ok); font-weight: 500; }
+  .cell-main.accent    { color: var(--accent); }
+  .cell-main.muted     { color: var(--text-mid); }
+  .cell-main.warn      { color: var(--warn); }
+
+  .td-notfound-msg {
+    color: var(--warn); font-size: 0.76rem; opacity: 0.85;
+  }
+
+  .no-answer {
+    text-align: center; padding: 30px; font-family: var(--mono);
+    font-size: 0.8rem; color: var(--text-dim); transition: color 0.3s;
+  }
+  .raw-block {
+    background: var(--raw-bg); border: 1px solid var(--border); border-radius: 4px;
+    padding: 14px 16px; font-family: var(--mono); font-size: 0.78rem; color: var(--text-mid);
+    white-space: pre-wrap; word-break: break-all; line-height: 1.7;
+    transition: background 0.3s, border-color 0.3s, color 0.3s;
+  }
+
+  /* ── REDUCE MOTION ── */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
+
+  /* ── HIGH CONTRAST ── */
+  @media (forced-colors: active) {
+    .geo-card.found, .geo-card.notfound { forced-color-adjust: none; border: 2px solid Highlight; }
+    .btn-submit { forced-color-adjust: none; border: 2px solid ButtonText; }
+    .badge-success, .badge-error, .badge-notfound { forced-color-adjust: none; }
+  }
+
+  footer {
+    margin-top: 48px; font-family: var(--mono); font-size: 0.6rem;
+    color: var(--text-dim); letter-spacing: 0.08em; text-align: center; opacity: 0.45;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 580px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .form-group.full { grid-column: 1; }
+    .geo-grid { grid-template-columns: 1fr; }
+    .theme-label { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<a class="skip-link" href="#main-content" id="skip-link">Skip to main content</a>
+
+<header role="banner">
+  <svg class="logo-shield" viewBox="0 0 40 44" fill="none" xmlns="http://www.w3.org/2000/svg"
+       aria-hidden="true" focusable="false">
+    <path d="M20 2L4 9v14c0 9 7 17.4 16 20 9-2.6 16-11 16-20V9L20 2z"/>
+    <circle cx="20" cy="22" r="5"/>
+    <line x1="20" y1="15" x2="20" y2="17"/>
+    <line x1="20" y1="27" x2="20" y2="29"/>
+    <line x1="13" y1="22" x2="15" y2="22"/>
+    <line x1="25" y1="22" x2="27" y2="22"/>
+  </svg>
+  <div class="header-text">
+    <h1>GeoIP</h1>
+    <p id="hdr-subtitle" aria-live="polite"></p>
+  </div>
+  <div class="header-right">
+    <!-- Language selector -->
+    <div class="lang-select-wrap">
+      <label for="lang-select" class="visually-hidden" id="lang-select-label">Language</label>
+      <select class="lang-select" id="lang-select" aria-labelledby="lang-select-label" title="Language / Langue">
+        <option value="ar">AR</option>
+        <option value="bn">BN</option>
+        <option value="de">DE</option>
+        <option value="en">EN</option>
+        <option value="es">ES</option>
+        <option value="fr">FR</option>
+        <option value="hi">HI</option>
+        <option value="id">ID</option>
+        <option value="ja">JA</option>
+        <option value="ko">KO</option>
+        <option value="pt-BR">PT</option>
+        <option value="ru">RU</option>
+        <option value="ur">UR</option>
+        <option value="vi">VI</option>
+        <option value="zh-CN">ZH</option>
+      </select>
+      <span class="lang-arrow" aria-hidden="true">▾</span>
+    </div>
+    <!-- Theme toggle -->
+    <button class="theme-toggle" id="theme-toggle"
+            role="switch" aria-checked="false" aria-label="Toggle color theme">
+      <span class="theme-icon" id="theme-icon" aria-hidden="true">☀️</span>
+      <div class="theme-track" aria-hidden="true"><div class="theme-thumb"></div></div>
+      <span class="theme-label" id="theme-label"></span>
+    </button>
+  </div>
+</header>
+
+<main id="main-content" role="main">
+
+  <div id="sr-status" aria-live="polite" aria-atomic="true"
+       style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;"></div>
+
+  <section class="panel" aria-labelledby="ph-params">
+    <div class="panel-head" id="ph-params" role="heading" aria-level="2"></div>
+    <div class="panel-body">
+      <form id="geo-form" novalidate aria-label="GeoIP query form">
+        <div class="form-grid">
+
+          <!-- IP MODE TABS -->
+          <div class="form-group full ip-section">
+            <label id="lbl-ip-mode"></label>
+            <div class="ip-tabs" role="tablist" aria-labelledby="lbl-ip-mode">
+              <button class="ip-tab" role="tab"
+                      id="tab-single" data-tab="single"
+                      aria-selected="true" aria-controls="pane-single"
+                      tabindex="0"></button>
+              <button class="ip-tab" role="tab"
+                      id="tab-multi" data-tab="multi"
+                      aria-selected="false" aria-controls="pane-multi"
+                      tabindex="-1"></button>
+            </div>
+
+            <!-- SINGLE IP PANE -->
+            <div class="ip-pane active" id="pane-single"
+                 role="tabpanel" aria-labelledby="tab-single" tabindex="0">
+              <input type="text" id="ip-single" name="ip"
+                     autocomplete="off" spellcheck="false"
+                     aria-labelledby="lbl-ip-mode"
+                     aria-describedby="ip-single-hint"
+                     aria-required="true"
+                     aria-invalid="false">
+              <div class="ip-hint" id="ip-single-hint"></div>
+            </div>
+
+            <!-- MULTI IP PANE -->
+            <div class="ip-pane" id="pane-multi"
+                 role="tabpanel" aria-labelledby="tab-multi" tabindex="0" hidden>
+              <textarea id="ip-multi" name="ips"
+                        autocomplete="off" spellcheck="false"
+                        rows="5"
+                        aria-labelledby="lbl-ip-mode"
+                        aria-describedby="ip-multi-hint"
+                        aria-required="true"
+                        aria-invalid="false"></textarea>
+              <div class="ip-hint" id="ip-multi-hint"></div>
+            </div>
+          </div>
+
+        </div><!-- /form-grid -->
+
+        <div class="submit-row">
+          <button class="btn-submit" id="btn-query" type="submit"
+                  aria-describedby="query-hint">
+            <!-- Globe icon -->
+            <svg class="send-icon" width="15" height="15" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round"
+                 aria-hidden="true" focusable="false">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="2" y1="12" x2="22" y2="12"/>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+            </svg>
+            <div class="spinner" aria-hidden="true"></div>
+            <span id="btn-send-label"></span>
+          </button>
+          <span class="query-hint" id="query-hint" aria-live="assertive" role="status"></span>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- Results panel -->
+  <section class="panel" id="results-panel"
+           aria-labelledby="ph-results"
+           aria-live="polite">
+    <div class="panel-head" id="ph-results" role="heading" aria-level="2"></div>
+    <div class="panel-body" id="results-body"></div>
+  </section>
+
+</main>
+
+<footer role="contentinfo" id="footer-text">GEOIP TOOL · CERT · v1.0</footer>
+
+<style>
+.visually-hidden {
+  position: absolute !important; width: 1px !important; height: 1px !important;
+  padding: 0 !important; margin: -1px !important; overflow: hidden !important;
+  clip: rect(0,0,0,0) !important; white-space: nowrap !important; border: 0 !important;
+}
+</style>
+
+<script>
+// ══════════════════════════════════════════════════════════════════
+// I18N — TRANSLATIONS
+// ══════════════════════════════════════════════════════════════════
+const LANGS = {
+  ar: {
+    subtitle:        'استخبارات التهديدات الإلكترونية · أداة تحديد الموقع الجغرافي',
+    themeLight:      'فاتح', themeDark: 'داكن',
+    panelParams:     'معاملات الاستعلام',
+    labelIpMode:     'عناوين IP',
+    tabSingle:       'عنوان واحد',
+    tabMulti:        'عناوين متعددة',
+    placeholderSingle: 'مثال: 8.8.8.8 أو 2001:4860::8888',
+    placeholderMulti:  'مثال:\n8.8.8.8\n1.1.1.1\n...',
+    hintSingle:      'IPv4 و IPv6 مقبولان',
+    hintMulti:       'عنوان IP واحد لكل سطر أو مفصولة بفاصلة أو مسافة · IPv4 و IPv6 مقبولان',
+    btnSend:         'تحديد الموقع',
+    panelResults:    'النتائج',
+    colContinent:    'القارة',
+    colCountry:      'الدولة',
+    colRegCountry:   'دولة التسجيل',
+    colCoords:       'الإحداثيات',
+    colTimezone:     'المنطقة الزمنية',
+    colAccuracy:     'الدقة',
+    labelFound:      'وُجد',
+    labelNotFound:   'غير موجود',
+    notFoundMsg:     'عنوان IP هذا غير موجود في قاعدة البيانات.',
+    noAnswer:        'لم يُعثر على أي نتيجة.',
+    errBadge:        'خطأ',
+    warnNoIp:        '⚠ أدخل عنوان IP',
+    replyCount:      n => `${n} نتيجة`,
+    dir:             'rtl',
+    skipLink:        'انتقل إلى المحتوى الرئيسي',
+    loadingLabel:    'جارٍ التحديد…',
+    resultsReady:    n => `اكتمل الاستعلام، ${n} نتيجة.`,
+    km:              'كم',
+    btnCopy:         'نسخ CSV',
+    btnCopied:       '✓ تم النسخ',
+  },
+  bn: {
+    subtitle:        'সাইবার হুমকি গোয়েন্দা · IP জিওলোকেশন টুল',
+    themeLight:      'হালকা', themeDark: 'গাঢ়',
+    panelParams:     'কোয়েরি প্যারামিটার',
+    labelIpMode:     'IP ঠিকানা',
+    tabSingle:       'একক',
+    tabMulti:        'একাধিক',
+    placeholderSingle: 'যেমন: 8.8.8.8 বা 2001:4860::8888',
+    placeholderMulti:  'যেমন:\n8.8.8.8\n1.1.1.1\n...',
+    hintSingle:      'IPv4 ও IPv6 গৃহীত',
+    hintMulti:       'প্রতি লাইনে একটি IP, বা কমা/স্পেস দিয়ে আলাদা করুন · IPv4 ও IPv6 গৃহীত',
+    btnSend:         'জিওলোকেট করুন',
+    panelResults:    'ফলাফল',
+    colContinent:    'মহাদেশ',
+    colCountry:      'দেশ',
+    colRegCountry:   'নিবন্ধিত দেশ',
+    colCoords:       'স্থানাঙ্ক',
+    colTimezone:     'সময় অঞ্চল',
+    colAccuracy:     'নির্ভুলতা',
+    labelFound:      'পাওয়া গেছে',
+    labelNotFound:   'পাওয়া যায়নি',
+    notFoundMsg:     'এই IP ঠিকানাটি ডেটাবেসে নেই।',
+    noAnswer:        'কোনো ফলাফল পাওয়া যায়নি।',
+    errBadge:        'ত্রুটি',
+    warnNoIp:        '⚠ একটি IP ঠিকানা লিখুন',
+    replyCount:      n => `${n}টি ফলাফল`,
+    dir:             'ltr',
+    skipLink:        'মূল বিষয়বস্তুতে যান',
+    loadingLabel:    'লোকেট করা হচ্ছে…',
+    resultsReady:    n => `কোয়েরি সম্পন্ন, ${n}টি ফলাফল।`,
+    km:              'কিমি',
+    btnCopy:         'CSV কপি',
+    btnCopied:       '✓ কপি হয়েছে',
+  },
+  hi: {
+    subtitle:        'साइबर खतरा खुफिया · IP जियोलोकेशन टूल',
+    themeLight:      'हल्का', themeDark: 'गहरा',
+    panelParams:     'क्वेरी पैरामीटर',
+    labelIpMode:     'IP पते',
+    tabSingle:       'एकल',
+    tabMulti:        'एकाधिक',
+    placeholderSingle: 'उदा: 8.8.8.8 या 2001:4860::8888',
+    placeholderMulti:  'उदा:\n8.8.8.8\n1.1.1.1\n...',
+    hintSingle:      'IPv4 और IPv6 स्वीकृत',
+    hintMulti:       'प्रति पंक्ति एक IP, या कॉमा/स्पेस से अलग करें · IPv4 और IPv6 स्वीकृत',
+    btnSend:         'जियोलोकेट करें',
+    panelResults:    'परिणाम',
+    colContinent:    'महाद्वीप',
+    colCountry:      'देश',
+    colRegCountry:   'पंजीकृत देश',
+    colCoords:       'निर्देशांक',
+    colTimezone:     'समय क्षेत्र',
+    colAccuracy:     'सटीकता',
+    labelFound:      'मिला',
+    labelNotFound:   'नहीं मिला',
+    notFoundMsg:     'यह IP पता डेटाबेस में नहीं है।',
+    noAnswer:        'कोई परिणाम नहीं मिला।',
+    errBadge:        'त्रुटि',
+    warnNoIp:        '⚠ कोई IP पता दर्ज करें',
+    replyCount:      n => `${n} परिणाम`,
+    dir:             'ltr',
+    skipLink:        'मुख्य सामग्री पर जाएं',
+    loadingLabel:    'लोकेट हो रहा है…',
+    resultsReady:    n => `क्वेरी पूर्ण, ${n} परिणाम।`,
+    km:              'किमी',
+    btnCopy:         'CSV कॉपी',
+    btnCopied:       '✓ कॉपी हो गया',
+  },
+  id: {
+    subtitle:        'Intelijen Ancaman Siber · Alat Geolokasi IP',
+    themeLight:      'Terang', themeDark: 'Gelap',
+    panelParams:     'Parameter Kueri',
+    labelIpMode:     'Alamat IP',
+    tabSingle:       'Tunggal',
+    tabMulti:        'Multiple',
+    placeholderSingle: 'mis.: 8.8.8.8 atau 2001:4860::8888',
+    placeholderMulti:  'mis.:\n8.8.8.8\n1.1.1.1\n...',
+    hintSingle:      'IPv4 dan IPv6 diterima',
+    hintMulti:       'Satu IP per baris, atau pisahkan dengan koma/spasi · IPv4 dan IPv6 diterima',
+    btnSend:         'Geolokasi',
+    panelResults:    'Hasil',
+    colContinent:    'Benua',
+    colCountry:      'Negara',
+    colRegCountry:   'Negara Terdaftar',
+    colCoords:       'Koordinat',
+    colTimezone:     'Zona Waktu',
+    colAccuracy:     'Akurasi',
+    labelFound:      'DITEMUKAN',
+    labelNotFound:   'TIDAK DITEMUKAN',
+    notFoundMsg:     'Alamat IP ini tidak ada dalam database.',
+    noAnswer:        'Tidak ada hasil ditemukan.',
+    errBadge:        'KESALAHAN',
+    warnNoIp:        '⚠ Masukkan alamat IP',
+    replyCount:      n => `${n} hasil`,
+    dir:             'ltr',
+    skipLink:        'Lewati ke konten utama',
+    loadingLabel:    'Melokasi…',
+    resultsReady:    n => `Kueri selesai, ${n} hasil.`,
+    km:              'km',
+    btnCopy:         'Salin CSV',
+    btnCopied:       '✓ Disalin',
+  },
+  ko: {
+    subtitle:        '사이버 위협 인텔리전스 · IP 지리적 위치 도구',
+    themeLight:      '라이트', themeDark: '다크',
+    panelParams:     '쿼리 매개변수',
+    labelIpMode:     'IP 주소',
+    tabSingle:       '단일',
+    tabMulti:        '다중',
+    placeholderSingle: '예: 8.8.8.8 또는 2001:4860::8888',
+    placeholderMulti:  '예:\n8.8.8.8\n1.1.1.1\n...',
+    hintSingle:      'IPv4 및 IPv6 허용',
+    hintMulti:       '줄당 IP 하나, 또는 쉼표/공백으로 구분 · IPv4 및 IPv6 허용',
+    btnSend:         '위치 조회',
+    panelResults:    '결과',
+    colContinent:    '대륙',
+    colCountry:      '국가',
+    colRegCountry:   '등록 국가',
+    colCoords:       '좌표',
+    colTimezone:     '시간대',
+    colAccuracy:     '정확도',
+    labelFound:      '찾음',
+    labelNotFound:   '찾을 수 없음',
+    notFoundMsg:     '이 IP 주소는 데이터베이스에 없습니다.',
+    noAnswer:        '결과를 찾을 수 없습니다.',
+    errBadge:        '오류',
+    warnNoIp:        '⚠ IP 주소를 입력하세요',
+    replyCount:      n => `${n}개 결과`,
+    dir:             'ltr',
+    skipLink:        '본문으로 건너뛰기',
+    loadingLabel:    '조회 중…',
+    resultsReady:    n => `쿼리 완료, ${n}개 결과.`,
+    km:              'km',
+    btnCopy:         '복사 CSV',
+    btnCopied:       '✓ 복사됨',
+  },
+  ur: {
+    subtitle:        'سائبر خطرہ انٹیلیجنس · IP جیو لوکیشن ٹول',
+    themeLight:      'روشن', themeDark: 'تاریک',
+    panelParams:     'کوئری پیرامیٹرز',
+    labelIpMode:     'IP ایڈریسز',
+    tabSingle:       'واحد',
+    tabMulti:        'متعدد',
+    placeholderSingle: 'مثلاً: 8.8.8.8 یا 2001:4860::8888',
+    placeholderMulti:  'مثلاً:\n8.8.8.8\n1.1.1.1\n...',
+    hintSingle:      'IPv4 اور IPv6 قابلِ قبول',
+    hintMulti:       'ہر لائن پر ایک IP، یا کاما/اسپیس سے الگ کریں · IPv4 اور IPv6 قابلِ قبول',
+    btnSend:         'جیو لوکیٹ کریں',
+    panelResults:    'نتائج',
+    colContinent:    'براعظم',
+    colCountry:      'ملک',
+    colRegCountry:   'رجسٹرڈ ملک',
+    colCoords:       'احداثیات',
+    colTimezone:     'وقت کا زون',
+    colAccuracy:     'درستگی',
+    labelFound:      'ملا',
+    labelNotFound:   'نہیں ملا',
+    notFoundMsg:     'یہ IP ایڈریس ڈیٹا بیس میں نہیں ہے۔',
+    noAnswer:        'کوئی نتیجہ نہیں ملا۔',
+    errBadge:        'خطا',
+    warnNoIp:        '⚠ IP ایڈریس درج کریں',
+    replyCount:      n => `${n} نتائج`,
+    dir:             'rtl',
+    skipLink:        'مرکزی مواد پر جائیں',
+    loadingLabel:    'لوکیٹ ہو رہا ہے…',
+    resultsReady:    n => `کوئری مکمل، ${n} نتائج۔`,
+    km:              'کم',
+    btnCopy:         'CSV کاپی',
+    btnCopied:       '✓ کاپی ہوگئی',
+  },
+  vi: {
+    subtitle:        'Tình báo Mối đe dọa Mạng · Công cụ Định vị IP',
+    themeLight:      'Sáng', themeDark: 'Tối',
+    panelParams:     'Tham số truy vấn',
+    labelIpMode:     'Địa chỉ IP',
+    tabSingle:       'Đơn lẻ',
+    tabMulti:        'Nhiều địa chỉ',
+    placeholderSingle: 'vd: 8.8.8.8 hoặc 2001:4860::8888',
+    placeholderMulti:  'vd:\n8.8.8.8\n1.1.1.1\n...',
+    hintSingle:      'Chấp nhận IPv4 và IPv6',
+    hintMulti:       'Một IP mỗi dòng, hoặc phân tách bằng dấu phẩy/khoảng trắng · Chấp nhận IPv4 và IPv6',
+    btnSend:         'Định vị',
+    panelResults:    'Kết quả',
+    colContinent:    'Lục địa',
+    colCountry:      'Quốc gia',
+    colRegCountry:   'Quốc gia đăng ký',
+    colCoords:       'Tọa độ',
+    colTimezone:     'Múi giờ',
+    colAccuracy:     'Độ chính xác',
+    labelFound:      'TÌM THẤY',
+    labelNotFound:   'KHÔNG TÌM THẤY',
+    notFoundMsg:     'Địa chỉ IP này không có trong cơ sở dữ liệu.',
+    noAnswer:        'Không tìm thấy kết quả.',
+    errBadge:        'LỖI',
+    warnNoIp:        '⚠ Nhập địa chỉ IP',
+    replyCount:      n => `${n} kết quả`,
+    dir:             'ltr',
+    skipLink:        'Chuyển đến nội dung chính',
+    loadingLabel:    'Đang định vị…',
+    resultsReady:    n => `Truy vấn hoàn tất, ${n} kết quả.`,
+    km:              'km',
+    btnCopy:         'Sao chép CSV',
+    btnCopied:       '✓ Đã sao chép',
+  },
+  de: {
+    subtitle:        'Cyber Threat Intelligence · IP-Geolokalisierungstool',
+    themeLight:      'Hell', themeDark: 'Dunkel',
+    panelParams:     'Anfrageparameter',
+    labelIpMode:     'IP-Adressen',
+    tabSingle:       'Einzeln',
+    tabMulti:        'Mehrfach',
+    placeholderSingle: 'z. B.: 8.8.8.8 oder 2001:4860::8888',
+    placeholderMulti:  'z. B.:\n8.8.8.8\n1.1.1.1\n...',
+    hintSingle:      'IPv4 und IPv6 werden akzeptiert',
+    hintMulti:       'Eine IP pro Zeile, oder durch Komma/Leerzeichen trennen · IPv4 und IPv6 akzeptiert',
+    btnSend:         'Geolokalisieren',
+    panelResults:    'Ergebnisse',
+    colContinent:    'Kontinent',
+    colCountry:      'Land',
+    colRegCountry:   'Registriertes Land',
+    colCoords:       'Koordinaten',
+    colTimezone:     'Zeitzone',
+    colAccuracy:     'Genauigkeit',
+    labelFound:      'GEFUNDEN',
+    labelNotFound:   'NICHT GEFUNDEN',
+    notFoundMsg:     'Diese IP-Adresse ist nicht in der Datenbank.',
+    noAnswer:        'Keine Ergebnisse gefunden.',
+    errBadge:        'FEHLER',
+    warnNoIp:        '⚠ IP-Adresse eingeben',
+    replyCount:      n => `${n} Ergebnis(se)`,
+    dir:             'ltr',
+    skipLink:        'Zum Hauptinhalt springen',
+    loadingLabel:    'Lokalisierung läuft…',
+    resultsReady:    n => `Abfrage abgeschlossen, ${n} Ergebnis(se).`,
+    km:              'km',
+    btnCopy:         'CSV kopieren',
+    btnCopied:       '✓ Kopiert',
+  },
+  en: {
+    subtitle:        'Cyber Threat Intelligence · IP Geolocation Tool',
+    themeLight:      'Light', themeDark: 'Dark',
+    panelParams:     'Query Parameters',
+    labelIpMode:     'IP Address(es)',
+    tabSingle:       'Single',
+    tabMulti:        'Multiple',
+    placeholderSingle: 'e.g.: 8.8.8.8 or 2001:4860:4860::8888',
+    placeholderMulti:  'e.g.:\n8.8.8.8\n1.1.1.1\n...',
+    hintSingle:      'IPv4 and IPv6 accepted',
+    hintMulti:       'One IP per line, or comma/space separated · IPv4 and IPv6 accepted',
+    btnSend:         'Geolocate',
+    panelResults:    'Results',
+    colContinent:    'Continent',
+    colCountry:      'Country',
+    colRegCountry:   'Reg. Country',
+    colCoords:       'Coordinates',
+    colTimezone:     'Time Zone',
+    colAccuracy:     'Accuracy',
+    labelFound:      'FOUND',
+    labelNotFound:   'NOT FOUND',
+    notFoundMsg:     'This IP address was not found in the database.',
+    noAnswer:        'No results found.',
+    errBadge:        'ERROR',
+    warnNoIp:        '⚠ Enter an IP address',
+    replyCount:      n => `${n} result(s)`,
+    dir:             'ltr',
+    skipLink:        'Skip to main content',
+    loadingLabel:    'Geolocating…',
+    resultsReady:    n => `Query complete, ${n} result(s).`,
+    km:              'km',
+    btnCopy:         'Copy CSV',
+    btnCopied:       '✓ Copied',
+  },
+  es: {
+    subtitle:        'Inteligencia de Amenazas · Herramienta de Geolocalización IP',
+    themeLight:      'Claro', themeDark: 'Oscuro',
+    panelParams:     'Parámetros de Consulta',
+    labelIpMode:     'Dirección(es) IP',
+    tabSingle:       'Individual',
+    tabMulti:        'Múltiple',
+    placeholderSingle: 'ej.: 8.8.8.8 o 2001:4860::8888',
+    placeholderMulti:  'ej.:\n8.8.8.8\n1.1.1.1\n...',
+    hintSingle:      'IPv4 e IPv6 aceptados',
+    hintMulti:       'Una IP por línea, o separadas por coma/espacio · IPv4 e IPv6 aceptados',
+    btnSend:         'Geolocalizar',
+    panelResults:    'Resultados',
+    colContinent:    'Continente',
+    colCountry:      'País',
+    colRegCountry:   'País Registrado',
+    colCoords:       'Coordenadas',
+    colTimezone:     'Huso horario',
+    colAccuracy:     'Precisión',
+    labelFound:      'ENCONTRADO',
+    labelNotFound:   'NO ENCONTRADO',
+    notFoundMsg:     'Esta dirección IP no está en la base de datos.',
+    noAnswer:        'No se encontraron resultados.',
+    errBadge:        'ERROR',
+    warnNoIp:        '⚠ Introduce una dirección IP',
+    replyCount:      n => `${n} resultado(s)`,
+    dir:             'ltr',
+    skipLink:        'Saltar al contenido principal',
+    loadingLabel:    'Geolocalizando…',
+    resultsReady:    n => `Consulta completada, ${n} resultado(s).`,
+    km:              'km',
+    btnCopy:         'Copiar CSV',
+    btnCopied:       '✓ Copiado',
+  },
+  fr: {
+    subtitle:        'Cyber Threat Intelligence · Outil de Géolocalisation IP',
+    themeLight:      'Clair', themeDark: 'Sombre',
+    panelParams:     'Paramètres de la requête',
+    labelIpMode:     'Adresse(s) IP',
+    tabSingle:       'Unique',
+    tabMulti:        'Multiple',
+    placeholderSingle: 'ex: 8.8.8.8 ou 2001:4860:4860::8888',
+    placeholderMulti:  'ex:\n8.8.8.8\n1.1.1.1\n...',
+    hintSingle:      'IPv4 et IPv6 acceptés',
+    hintMulti:       'Une IP par ligne, ou séparées par virgule/espace · IPv4 et IPv6 acceptés',
+    btnSend:         'Géolocaliser',
+    panelResults:    'Résultats',
+    colContinent:    'Continent',
+    colCountry:      'Pays',
+    colRegCountry:   'Pays enregistré',
+    colCoords:       'Coordonnées',
+    colTimezone:     'Fuseau horaire',
+    colAccuracy:     'Précision',
+    labelFound:      'TROUVÉ',
+    labelNotFound:   'NON TROUVÉ',
+    notFoundMsg:     'Cette adresse IP est absente de la base de données.',
+    noAnswer:        'Aucun résultat trouvé.',
+    errBadge:        'ERREUR',
+    warnNoIp:        '⚠ Entrez une adresse IP',
+    replyCount:      n => `${n} résultat(s)`,
+    dir:             'ltr',
+    skipLink:        'Aller au contenu principal',
+    loadingLabel:    'Géolocalisation en cours…',
+    resultsReady:    n => `Requête terminée, ${n} résultat(s).`,
+    km:              'km',
+    btnCopy:         'Copier CSV',
+    btnCopied:       '✓ Copié',
+  },
+  ja: {
+    subtitle:        'サイバー脅威インテリジェンス · IP ジオロケーションツール',
+    themeLight:      'ライト', themeDark: 'ダーク',
+    panelParams:     'クエリパラメータ',
+    labelIpMode:     'IPアドレス',
+    tabSingle:       '単一',
+    tabMulti:        '複数',
+    placeholderSingle: '例: 8.8.8.8 または 2001:4860::8888',
+    placeholderMulti:  '例:\n8.8.8.8\n1.1.1.1\n...',
+    hintSingle:      'IPv4・IPv6 対応',
+    hintMulti:       '1行に1つのIPアドレス、またはカンマ/スペース区切り · IPv4・IPv6 対応',
+    btnSend:         'ジオロケート',
+    panelResults:    '結果',
+    colContinent:    '大陸',
+    colCountry:      '国',
+    colRegCountry:   '登録国',
+    colCoords:       '座標',
+    colTimezone:     'タイムゾーン',
+    colAccuracy:     '精度',
+    labelFound:      '検出',
+    labelNotFound:   '未検出',
+    notFoundMsg:     'このIPアドレスはデータベースに存在しません。',
+    noAnswer:        '結果が見つかりません。',
+    errBadge:        'エラー',
+    warnNoIp:        '⚠ IPアドレスを入力してください',
+    replyCount:      n => `${n} 件の結果`,
+    dir:             'ltr',
+    skipLink:        'メインコンテンツへスキップ',
+    loadingLabel:    'ジオロケーション中…',
+    resultsReady:    n => `クエリ完了、${n} 件の結果。`,
+    km:              'km',
+    btnCopy:         'CSVをコピー',
+    btnCopied:       '✓ コピー済み',
+  },
+  'pt-BR': {
+    subtitle:        'Inteligência de Ameaças · Ferramenta de Geolocalização IP',
+    themeLight:      'Claro', themeDark: 'Escuro',
+    panelParams:     'Parâmetros da Consulta',
+    labelIpMode:     'Endereço(s) IP',
+    tabSingle:       'Único',
+    tabMulti:        'Múltiplo',
+    placeholderSingle: 'ex.: 8.8.8.8 ou 2001:4860::8888',
+    placeholderMulti:  'ex.:\n8.8.8.8\n1.1.1.1\n...',
+    hintSingle:      'IPv4 e IPv6 aceitos',
+    hintMulti:       'Um IP por linha, ou separados por vírgula/espaço · IPv4 e IPv6 aceitos',
+    btnSend:         'Geolocalizar',
+    panelResults:    'Resultados',
+    colContinent:    'Continente',
+    colCountry:      'País',
+    colRegCountry:   'País Registrado',
+    colCoords:       'Coordenadas',
+    colTimezone:     'Fuso horário',
+    colAccuracy:     'Precisão',
+    labelFound:      'ENCONTRADO',
+    labelNotFound:   'NÃO ENCONTRADO',
+    notFoundMsg:     'Este endereço IP não está na base de dados.',
+    noAnswer:        'Nenhum resultado encontrado.',
+    errBadge:        'ERRO',
+    warnNoIp:        '⚠ Informe um endereço IP',
+    replyCount:      n => `${n} resultado(s)`,
+    dir:             'ltr',
+    skipLink:        'Pular para o conteúdo principal',
+    loadingLabel:    'Geolocalizando…',
+    resultsReady:    n => `Consulta concluída, ${n} resultado(s).`,
+    km:              'km',
+    btnCopy:         'Copiar CSV',
+    btnCopied:       '✓ Copiado',
+  },
+  ru: {
+    subtitle:        'Киберразведка угроз · Инструмент геолокации IP',
+    themeLight:      'Светлая', themeDark: 'Тёмная',
+    panelParams:     'Параметры запроса',
+    labelIpMode:     'IP-адреса',
+    tabSingle:       'Одиночный',
+    tabMulti:        'Множественный',
+    placeholderSingle: 'напр.: 8.8.8.8 или 2001:4860::8888',
+    placeholderMulti:  'напр.:\n8.8.8.8\n1.1.1.1\n...',
+    hintSingle:      'IPv4 и IPv6 поддерживаются',
+    hintMulti:       'Один IP на строку, или разделить запятой/пробелом · IPv4 и IPv6 поддерживаются',
+    btnSend:         'Геолоцировать',
+    panelResults:    'Результаты',
+    colContinent:    'Континент',
+    colCountry:      'Страна',
+    colRegCountry:   'Зарег. страна',
+    colCoords:       'Координаты',
+    colTimezone:     'Часовой пояс',
+    colAccuracy:     'Точность',
+    labelFound:      'НАЙДЕН',
+    labelNotFound:   'НЕ НАЙДЕН',
+    notFoundMsg:     'Этот IP-адрес отсутствует в базе данных.',
+    noAnswer:        'Результаты не найдены.',
+    errBadge:        'ОШИБКА',
+    warnNoIp:        '⚠ Введите IP-адрес',
+    replyCount:      n => `${n} результат(ов)`,
+    dir:             'ltr',
+    skipLink:        'Перейти к основному содержимому',
+    loadingLabel:    'Геолокация…',
+    resultsReady:    n => `Запрос выполнен, ${n} результат(ов).`,
+    km:              'км',
+    btnCopy:         'Копировать CSV',
+    btnCopied:       '✓ Скопировано',
+  },
+  'zh-CN': {
+    subtitle:        '网络威胁情报 · IP 地理位置工具',
+    themeLight:      '浅色', themeDark: '深色',
+    panelParams:     '查询参数',
+    labelIpMode:     'IP 地址',
+    tabSingle:       '单个',
+    tabMulti:        '多个',
+    placeholderSingle: '例：8.8.8.8 或 2001:4860::8888',
+    placeholderMulti:  '例：\n8.8.8.8\n1.1.1.1\n...',
+    hintSingle:      '支持 IPv4 和 IPv6',
+    hintMulti:       '每行一个 IP，或用逗号/空格分隔 · 支持 IPv4 和 IPv6',
+    btnSend:         '地理定位',
+    panelResults:    '结果',
+    colContinent:    '大洲',
+    colCountry:      '国家',
+    colRegCountry:   '注册国',
+    colCoords:       '坐标',
+    colTimezone:     '时区',
+    colAccuracy:     '精度',
+    labelFound:      '已找到',
+    labelNotFound:   '未找到',
+    notFoundMsg:     '该 IP 地址不在数据库中。',
+    noAnswer:        '未找到结果。',
+    errBadge:        '错误',
+    warnNoIp:        '⚠ 请输入 IP 地址',
+    replyCount:      n => `${n} 条结果`,
+    dir:             'ltr',
+    skipLink:        '跳转到主要内容',
+    loadingLabel:    '正在定位…',
+    resultsReady:    n => `查询完成，${n} 条结果。`,
+    km:              'km',
+    btnCopy:         '复制 CSV',
+    btnCopied:       '✓ 已复制',
+  },
+};
+
+// ── API lang mapping (UI lang → GeoIP API supported lang) ─────────
+const API_LANG_MAP = {
+  'ar': 'en', 'bn': 'en', 'de': 'en', 'en': 'en',
+  'es': 'es', 'fr': 'fr', 'hi': 'en', 'id': 'en',
+  'ja': 'ja', 'ko': 'en', 'pt-BR': 'pt-BR',
+  'ru': 'ru', 'ur': 'en', 'vi': 'en', 'zh-CN': 'zh-CN',
+};
+
+// ══════════════════════════════════════════════════════════════════
+// LANGUAGE DETECTION
+// ══════════════════════════════════════════════════════════════════
+const SUPPORTED = Object.keys(LANGS);
+
+function detectLang() {
+  const navLangs = Array.from(navigator.languages || [navigator.language || 'en']);
+  for (const l of navLangs) {
+    if (SUPPORTED.includes(l)) return l;
+    const base = l.split('-')[0];
+    const match = SUPPORTED.find(s => s === base || s.startsWith(base + '-'));
+    if (match) return match;
+  }
+  return 'en';
+}
+
+// ══════════════════════════════════════════════════════════════════
+// THEME
+// ══════════════════════════════════════════════════════════════════
+const html       = document.documentElement;
+const themeBtn   = document.getElementById('theme-toggle');
+const themeLabel = document.getElementById('theme-label');
+const themeIcon  = document.getElementById('theme-icon');
+
+let currentLang = 'en';
+let isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+applyTheme(isDark);
+
+themeBtn.addEventListener('click', () => { isDark = !isDark; applyTheme(isDark); });
+themeBtn.addEventListener('keydown', e => {
+  if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); themeBtn.click(); }
+});
+
+function applyTheme(dark) {
+  html.dataset.theme = dark ? 'dark' : 'light';
+  themeBtn.setAttribute('aria-checked', dark ? 'false' : 'true');
+  const t = LANGS[currentLang] || LANGS.en;
+  themeLabel.textContent = dark ? t.themeLight : t.themeDark;
+  themeIcon.textContent  = dark ? '☀️' : '🌙';
+  themeBtn.setAttribute('aria-label', `${dark ? t.themeLight : t.themeDark} — toggle color theme`);
+}
+
+// ══════════════════════════════════════════════════════════════════
+// APPLY LANG
+// ══════════════════════════════════════════════════════════════════
+function applyLang(lang) {
+  currentLang = lang;
+  const t = LANGS[lang] || LANGS.en;
+  const dir = t.dir || 'ltr';
+
+  html.lang = lang; html.dir = dir; document.body.dir = dir;
+
+  const skipLink = document.getElementById('skip-link');
+  if (skipLink) skipLink.textContent = t.skipLink || 'Skip to main content';
+
+  document.getElementById('hdr-subtitle').textContent      = t.subtitle;
+  document.getElementById('ph-params').textContent         = t.panelParams;
+  document.getElementById('lbl-ip-mode').textContent       = t.labelIpMode;
+  document.getElementById('tab-single').textContent        = t.tabSingle;
+  document.getElementById('tab-multi').textContent         = t.tabMulti;
+  document.getElementById('ip-single').placeholder         = t.placeholderSingle;
+  document.getElementById('ip-multi').placeholder          = t.placeholderMulti;
+  document.getElementById('ip-single-hint').textContent    = t.hintSingle;
+  document.getElementById('ip-multi-hint').textContent     = t.hintMulti;
+  document.getElementById('btn-send-label').textContent    = t.btnSend;
+  document.getElementById('ph-results').textContent        = t.panelResults;
+
+  document.getElementById('lang-select-label').textContent =
+    dir === 'rtl' ? 'اللغة' : 'Language';
+
+  applyTheme(isDark);
+}
+
+// ── INIT LANGUAGE SELECTOR ────────────────────────────────────────
+const langSel  = document.getElementById('lang-select');
+const initLang = detectLang();
+langSel.value  = SUPPORTED.includes(initLang) ? initLang : 'en';
+applyLang(langSel.value);
+langSel.addEventListener('change', () => applyLang(langSel.value));
+
+// ══════════════════════════════════════════════════════════════════
+// IP MODE TABS
+// ══════════════════════════════════════════════════════════════════
+let activeTab = 'single';
+const ipTabs = Array.from(document.querySelectorAll('.ip-tab'));
+
+ipTabs.forEach(btn => {
+  btn.addEventListener('click', () => activateIPTab(btn.dataset.tab, btn));
+  btn.addEventListener('keydown', e => {
+    const dir = html.dir === 'rtl' ? -1 : 1;
+    let idx = ipTabs.indexOf(e.currentTarget);
+    if (e.key === 'ArrowRight') { e.preventDefault(); idx = (idx + dir + ipTabs.length) % ipTabs.length; ipTabs[idx].focus(); }
+    if (e.key === 'ArrowLeft')  { e.preventDefault(); idx = (idx - dir + ipTabs.length) % ipTabs.length; ipTabs[idx].focus(); }
+    if (e.key === 'Home') { e.preventDefault(); ipTabs[0].focus(); }
+    if (e.key === 'End')  { e.preventDefault(); ipTabs[ipTabs.length - 1].focus(); }
+  });
+});
+
+function activateIPTab(tabId, btn) {
+  activeTab = tabId;
+  ipTabs.forEach(b => { b.setAttribute('aria-selected', 'false'); b.tabIndex = -1; });
+  document.querySelectorAll('.ip-pane').forEach(p => { p.classList.remove('active'); p.hidden = true; });
+  btn.setAttribute('aria-selected', 'true'); btn.tabIndex = 0;
+  const pane = document.getElementById('pane-' + tabId);
+  pane.classList.add('active'); pane.hidden = false;
+}
+
+// ══════════════════════════════════════════════════════════════════
+// PARSE IPs FROM INPUT
+// ══════════════════════════════════════════════════════════════════
+function parseIPs(raw) {
+  return raw.split(/[\n,\s]+/).map(s => s.trim()).filter(Boolean);
+}
+
+function getRequestedIPs() {
+  if (activeTab === 'single') {
+    const v = document.getElementById('ip-single').value.trim();
+    return v ? [v] : [];
+  } else {
+    return parseIPs(document.getElementById('ip-multi').value);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// SUBMIT
+// ══════════════════════════════════════════════════════════════════
+const geoForm  = document.getElementById('geo-form');
+const btn      = document.getElementById('btn-query');
+const hint     = document.getElementById('query-hint');
+const srStatus = document.getElementById('sr-status');
+
+geoForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const t = LANGS[currentLang] || LANGS.en;
+  const requestedIPs = getRequestedIPs();
+
+  // Validation
+  const singleInput = document.getElementById('ip-single');
+  const multiInput  = document.getElementById('ip-multi');
+  const activeInput = activeTab === 'single' ? singleInput : multiInput;
+
+  if (!requestedIPs.length) {
+    activeInput.focus();
+    activeInput.setAttribute('aria-invalid', 'true');
+    hint.textContent = t.warnNoIp;
+    hint.style.color = 'var(--warn)';
+    hint.setAttribute('role', 'alert');
+    return;
+  }
+  activeInput.setAttribute('aria-invalid', 'false');
+  hint.textContent = '';
+  hint.removeAttribute('role');
+
+  // Build API payload
+  const apiLang = API_LANG_MAP[currentLang] || 'en';
+  let payload;
+  if (requestedIPs.length === 1) {
+    payload = { ip: requestedIPs[0], lang: apiLang };
+  } else {
+    payload = { ips: requestedIPs, lang: apiLang };
+  }
+
+  btn.disabled = true;
+  btn.classList.add('loading');
+  btn.setAttribute('aria-busy', 'true');
+  srStatus.textContent = t.loadingLabel || 'Geolocating…';
+
+  const t0 = performance.now();
+
+  try {
+    const res = await fetch('/api/v1/geoip', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const elapsed = ((performance.now() - t0) / 1000).toFixed(2);
+    if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
+    const data = await res.json();
+    renderResults(data, requestedIPs, elapsed);
+    const count = requestedIPs.length;
+    srStatus.textContent = t.resultsReady ? t.resultsReady(count) : `${count} result(s).`;
+  } catch (err) {
+    renderError(err, requestedIPs, ((performance.now() - t0) / 1000).toFixed(2));
+    srStatus.textContent = String(err);
+  } finally {
+    btn.disabled = false;
+    btn.classList.remove('loading');
+    btn.removeAttribute('aria-busy');
+  }
+});
+
+// Enter in single IP field
+document.getElementById('ip-single').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); geoForm.requestSubmit(); }
+});
+
+// ══════════════════════════════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════════════════════════════
+
+// Last results state (for CSV export)
+let lastAnswers = [];
+let lastRequestedIPs = [];
+
+function renderResults(data, requestedIPs, elapsed) {
+  const panel = document.getElementById('results-panel');
+  const body  = document.getElementById('results-body');
+  const t = LANGS[currentLang] || LANGS.en;
+  panel.style.display = 'block';
+
+  const status = (data.status || 'ERROR').toUpperCase();
+
+  // Build a map of returned answers by IP
+  const answersMap = {};
+  if (data.answers && Array.isArray(data.answers)) {
+    data.answers.forEach(a => { if (a.ip) answersMap[a.ip] = a; });
+  }
+
+  if (status === 'ERROR') {
+    lastAnswers = []; lastRequestedIPs = [];
+    body.innerHTML = `
+      <div class="result-meta">
+        <span class="badge badge-error">${t.errBadge}</span>
+        <span class="result-query-str">${esc(requestedIPs.join(', '))}</span>
+        <span class="result-time">${elapsed}s</span>
+      </div>
+      <div class="raw-block" role="alert" style="color:var(--err)">${esc(JSON.stringify(data, null, 2))}</div>`;
+    finalizePanel(panel);
+    return;
+  }
+
+  // Store for CSV export
+  lastRequestedIPs = requestedIPs;
+  lastAnswers = requestedIPs.map(ip => answersMap[ip] || null);
+
+  // Merge: found IPs + NOT FOUND for missing ones
+  const totalFound = Object.keys(answersMap).length;
+  const badgeClass = totalFound > 0 ? 'badge-success' : 'badge-notfound';
+  const badgeTxt   = totalFound > 0 ? 'OK' : t.labelNotFound;
+
+  let rowsHTML = '';
+  requestedIPs.forEach(ip => {
+    const ans = answersMap[ip];
+    if (ans) {
+      rowsHTML += buildFoundRow(ans, t);
+    } else {
+      rowsHTML += buildNotFoundRow(ip, t);
+    }
+  });
+
+  const queryDisplay = requestedIPs.length === 1
+    ? requestedIPs[0]
+    : `${requestedIPs.length} IPs`;
+
+  body.innerHTML = `
+    <div class="result-meta" role="region" aria-label="${esc(t.panelResults)}">
+      <span class="badge ${badgeClass}" aria-label="Status: ${badgeTxt}">${badgeTxt}</span>
+      <span class="result-query-str">${esc(queryDisplay)}</span>
+      <span class="result-time">${elapsed}s · ${t.replyCount(requestedIPs.length)}</span>
+      <button class="btn-copy" id="btn-copy-csv" type="button" aria-label="${esc(t.btnCopy || 'Copy CSV')}">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+        </svg>
+        <span id="copy-label">${esc(t.btnCopy || 'Copy CSV')}</span>
+      </button>
+    </div>
+    <div class="geo-table-wrap">
+      <table class="geo-table" aria-label="${esc(t.panelResults)}">
+        <caption class="visually-hidden">${esc(t.panelResults)}</caption>
+        <thead><tr>
+          <th scope="col">IP</th>
+          <th scope="col">Status</th>
+          <th scope="col">${t.colCountry}</th>
+          <th scope="col">${t.colRegCountry}</th>
+          <th scope="col">${t.colContinent}</th>
+          <th scope="col">${t.colCoords}<br><span style="font-size:0.55rem;opacity:0.7">${t.colTimezone}</span></th>
+          <th scope="col">${t.colAccuracy}</th>
+        </tr></thead>
+        <tbody>${rowsHTML}</tbody>
+      </table>
+    </div>`;
+
+  // Wire up copy button
+  document.getElementById('btn-copy-csv').addEventListener('click', copyCSV);
+
+  finalizePanel(panel);
+}
+
+function buildFoundRow(ans, t) {
+  const continentCode = ans.continent_code || '';
+  const continentName = ans.continent_name || '—';
+  const countryCode   = ans.country_isocode || '';
+  const countryName   = ans.country_name   || '—';
+  const regCode       = ans.reg_country_code || '';
+  const regName       = ans.reg_country_name || null;
+  const lat    = ans.latitude  != null ? fmtCoord(ans.latitude)  : null;
+  const lon    = ans.longitude != null ? fmtCoord(ans.longitude) : null;
+  const coords = (lat && lon) ? `${lat}, ${lon}` : '—';
+  const tz       = ans.time_zone || '—';
+  const accuracy = ans.accuracy != null ? `~${ans.accuracy} ${t.km}` : '—';
+
+  // Registered country cell: dim if identical to country, accent if different
+  let regCellHTML;
+  if (!regName && !regCode) {
+    regCellHTML = `<span class="cell-main muted">—</span>`;
+  } else {
+    const isSame = regCode === countryCode;
+    const cls = isSame ? 'cell-main muted' : 'cell-main accent';
+    regCellHTML = `
+      <span class="${cls}">${esc(regName || '—')}</span>
+      ${regCode ? `<span class="cell-sub">${esc(regCode)}</span>` : ''}`;
+  }
+
+  return `
+    <tr class="row-found" aria-label="${esc(ans.ip)} — ${t.labelFound}">
+      <td class="td-ip">${esc(ans.ip)}</td>
+      <td class="td-status"><span class="badge badge-success">${t.labelFound}</span></td>
+      <td>
+        <span class="cell-main highlight">${esc(countryName)}</span>
+        ${countryCode ? `<span class="cell-sub">${esc(countryCode)}</span>` : ''}
+      </td>
+      <td>${regCellHTML}</td>
+      <td>
+        <span class="cell-main muted">${esc(continentName)}</span>
+        ${continentCode ? `<span class="cell-sub">${esc(continentCode)}</span>` : ''}
+      </td>
+      <td>
+        <span class="cell-main accent">${esc(coords)}</span>
+        <span class="cell-sub">${esc(tz)}</span>
+      </td>
+      <td><span class="cell-main muted">${esc(accuracy)}</span></td>
+    </tr>`;
+}
+
+function buildNotFoundRow(ip, t) {
+  return `
+    <tr class="row-notfound" aria-label="${esc(ip)} — ${t.labelNotFound}">
+      <td class="td-ip notfound">${esc(ip)}</td>
+      <td class="td-status"><span class="badge badge-notfound">${t.labelNotFound}</span></td>
+      <td colspan="5" class="td-notfound-msg">⊘ &nbsp;${esc(t.notFoundMsg)}</td>
+    </tr>`;
+}
+
+function renderError(err, requestedIPs, elapsed) {
+  const panel = document.getElementById('results-panel');
+  const body  = document.getElementById('results-body');
+  const t = LANGS[currentLang] || LANGS.en;
+  lastAnswers = []; lastRequestedIPs = [];
+  panel.style.display = 'block';
+  body.innerHTML = `
+    <div class="result-meta">
+      <span class="badge badge-error">${t.errBadge}</span>
+      <span class="result-query-str">${esc(requestedIPs.join(', '))}</span>
+      <span class="result-time">${elapsed}s</span>
+    </div>
+    <div class="raw-block" role="alert" style="color:var(--err)">${esc(String(err))}</div>`;
+  finalizePanel(panel);
+}
+
+// ── CSV EXPORT ────────────────────────────────────────────────────
+function csvField(v) {
+  if (v == null || v === '') return '';
+  const s = String(v);
+  return (s.includes(';') || s.includes('"') || s.includes('\n'))
+    ? '"' + s.replace(/"/g, '""') + '"'
+    : s;
+}
+
+function copyCSV() {
+  const t = LANGS[currentLang] || LANGS.en;
+  const headers = [
+    'ip', 'status',
+    'country_name', 'country_isocode',
+    'reg_country_name', 'reg_country_code',
+    'continent_name', 'continent_code',
+    'latitude', 'longitude', 'time_zone',
+    'accuracy'
+  ].join('|');
+
+  const rows = lastRequestedIPs.map((ip, i) => {
+    const ans = lastAnswers[i];
+    if (!ans) {
+      return [ip, 'NOT_FOUND', '', '', '', '', '', '', '', '', '', ''].join('|');
+    }
+    return [
+      csvField(ans.ip),
+      csvField('FOUND'),
+      csvField(ans.country_name),
+      csvField(ans.country_isocode),
+      csvField(ans.reg_country_name),
+      csvField(ans.reg_country_code),
+      csvField(ans.continent_name),
+      csvField(ans.continent_code),
+      csvField(ans.latitude),
+      csvField(ans.longitude),
+      csvField(ans.time_zone),
+      csvField(ans.accuracy != null ? ans.accuracy : ''),
+    ].join('|');
+  });
+
+  const csv = [headers, ...rows].join('\r\n');
+
+  navigator.clipboard.writeText(csv).then(() => {
+    const btn = document.getElementById('btn-copy-csv');
+    const lbl = document.getElementById('copy-label');
+    if (!btn) return;
+    btn.classList.add('copied');
+    lbl.textContent = t.btnCopied || '✓ Copied';
+    btn.setAttribute('aria-label', t.btnCopied || '✓ Copied');
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      lbl.textContent = t.btnCopy || 'Copy CSV';
+      btn.setAttribute('aria-label', t.btnCopy || 'Copy CSV');
+    }, 2000);
+  }).catch(() => {
+    // Fallback: textarea trick
+    const ta = document.createElement('textarea');
+    ta.value = csv; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    try { document.execCommand('copy'); } catch (_) {}
+    document.body.removeChild(ta);
+  });
+}
+
+function finalizePanel(panel) {
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  panel.setAttribute('tabindex', '-1');
+  panel.focus({ preventScroll: true });
+}
+
+const esc = s => String(s)
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+  .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+function fmtCoord(n) {
+  return (Math.round(n * 10000) / 10000).toFixed(4);
+}
+</script>
+</body>
+</html>

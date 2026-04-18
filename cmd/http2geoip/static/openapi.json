@@ -1,0 +1,206 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "GeoIP Address Geolocation API",
+        "description": "API for geolocating IP addresses using a MaxMind GeoLite2 database.",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://localhost:8080",
+            "description": "Local server"
+        }
+    ],
+    "paths": {
+        "/api/v1/geoip": {
+            "post": {
+                "summary": "Geolocate one or multiple IP addresses",
+                "description": "Returns geographic information for a single IP (`ip`) or multiple IPs (`ips`). Only one of the two fields must be provided. Maximum number of IPs is controlled by the server environment variable `GEOIP_MAX_IPS`.",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/GeoIPRequest"
+                            },
+                            "examples": {
+                                "single": {
+                                    "summary": "Single IP lookup",
+                                    "value": {
+                                        "ip": "8.8.8.8",
+                                        "lang": "en"
+                                    }
+                                },
+                                "multiple": {
+                                    "summary": "Multiple IP lookup",
+                                    "value": {
+                                        "ips": [
+                                            "8.8.8.8",
+                                            "1.1.1.1"
+                                        ],
+                                        "lang": "fr"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "GeoIP lookup result",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GeoResponse"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "description": "Method not allowed"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "GeoIPRequest": {
+                "type": "object",
+                "description": "Only one of `ip` or `ips` must be provided.",
+                "properties": {
+                    "ip": {
+                        "type": "string",
+                        "description": "Single IP address to lookup",
+                        "examples": [
+                            "8.8.8.8"
+                        ]
+                    },
+                    "ips": {
+                        "type": "array",
+                        "description": "List of IP addresses to lookup",
+                        "items": {
+                            "type": "string",
+                            "examples": [
+                                "8.8.8.8"
+                            ]
+                        }
+                    },
+                    "lang": {
+                        "type": "string",
+                        "description": "Language for localized names",
+                        "enum": [
+                            "en",
+                            "es",
+                            "fr",
+                            "ja",
+                            "pt-BR",
+                            "ru",
+                            "zh-CN"
+                        ],
+                        "default": "en"
+                    }
+                }
+            },
+            "GeoResponse": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "description": "Result status",
+                        "enum": [
+                            "SUCCESS",
+                            "NOTFOUND",
+                            "ERROR"
+                        ]
+                    },
+                    "answers": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/GeoAnswer"
+                        }
+                    }
+                }
+            },
+            "GeoAnswer": {
+                "type": "object",
+                "properties": {
+                    "ip": {
+                        "type": "string",
+                        "description": "Queried IP address"
+                    },
+                    "continent_code": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "example": "EU"
+                    },
+                    "continent_name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "example": "Europe"
+                    },
+                    "country_isocode": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "example": "FR"
+                    },
+                    "country_name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "example": "France"
+                    },
+                    "accuracy": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "example": 50
+                    },
+                    "latitude": {
+                        "type": [
+                            "number",
+                            "null"
+                        ],
+                        "example": 48.8566
+                    },
+                    "longitude": {
+                        "type": [
+                            "number",
+                            "null"
+                        ],
+                        "example": 2.3522
+                    },
+                    "time_zone": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "example": "Europe/Paris"
+                    },
+                    "reg_country_name": {
+                        "type": "string",
+                        "description": "Localized name of the registered country",
+                        "examples": [
+                            "United States"
+                        ]
+                    },
+                    "reg_country_code": {
+                        "type": "string",
+                        "description": "ISO 3166-1 alpha-2 code of the registered country",
+                        "examples": [
+                            "US"
+                        ]
+                    }
+                }
+            }
+        }
+    }
+}
