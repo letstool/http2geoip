@@ -72,7 +72,7 @@ var (
 )
 
 const (
-    lastUpdateFile = ".last_update" // file containing the date of the last DB update
+    lastUpdateFile = ".last_update_geoip" // file containing the date of the last DB update
     maxMindDomain  = "download.maxmind.com"
 )
 

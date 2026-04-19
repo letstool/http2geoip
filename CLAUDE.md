@@ -68,7 +68,7 @@ Every configuration value can be set via an environment variable **or** a comman
 |-----------------------|-----------------|-------------------|------------------------------------------------------------------------------------------|
 | `GEOIP_LISTEN_ADDR`   | `-listen`       | `127.0.0.1:8080`  | Listen address and port for the HTTP server.                                             |
 | `GEOIP_DB_URL`        | `-db-url`       | *(none)*          | MaxMind download URL (tar.gz) or base URL of a peer `http2geoip` instance.              |
-| `GEOIP_DB_DIR`        | `-db-dir`       | `/data`           | Directory used to store and cache the mmdb file and the `.last_update` marker.          |
+| `GEOIP_DB_DIR`        | `-db-dir`       | `/data`           | Directory used to store and cache the mmdb file and the `.last_update_geoip` marker.          |
 | `GEOIP_UPDATE_HOUR`   | `-update-hour`  | `02:00`           | Daily database refresh time in `HH:MM` UTC format.                                      |
 | `GEOIP_MAX_IPS`       | `-max-ips`      | `100`             | Maximum number of IP addresses accepted in a single batch request.                       |
 
