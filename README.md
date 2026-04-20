@@ -41,7 +41,7 @@ MIT License — Copyright (c) 2026 letstool
 - Localized country and continent names in **7 languages**: `en`, `es`, `fr`, `ja`, `pt-BR`, `ru`, `zh-CN`
 - Returns continent, country, registered country, coordinates, accuracy radius, and time zone
 - Daily automatic database update from MaxMind or a peer instance
-- Peer mode: sync the mmdb file from another running `http2geoip` instance via `/getdb`
+- Peer mode: sync the mmdb file from another running `http2geoip` instance via `/db/geoip`
 - Configurable listen address, database path, update schedule, and IP batch limit
 - Docker image built on `scratch` — minimal attack surface
 
@@ -169,7 +169,7 @@ On startup, the server checks whether a cached mmdb file exists in `GEOIP_DB_DIR
 
 **MaxMind mode** — when the URL points to `download.maxmind.com`, the server downloads the official GeoLite2-City tar.gz archive and extracts the mmdb file directly.
 
-**Peer mode** — when the URL points to any other host, the server fetches the mmdb from the `/getdb` endpoint of that host (another `http2geoip` instance). If the download fails, it retries silently every 5 minutes.
+**Peer mode** — when the URL points to any other host, the server fetches the mmdb from the `/db/geoip` endpoint of that host (another `http2geoip` instance). If the download fails, it retries silently every 5 minutes.
 
 The database is then refreshed daily at the time configured by `-update-hour` / `GEOIP_UPDATE_HOUR`, without any server restart.
 
@@ -306,7 +306,7 @@ Returns the full OpenAPI 3.1 specification of the API.
 
 Returns the application icon.
 
-### `GET /getdb`
+### `GET /db/geoip`
 
 Serves the current GeoLite2-City mmdb file. Used by peer instances to sync their database without a MaxMind account.
 

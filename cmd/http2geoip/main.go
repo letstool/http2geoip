@@ -265,13 +265,13 @@ func ensureDB(ctx context.Context) error {
     return updateDB(ctx)
 }
 
-// download from a peer that exposes /getdb
+// download from a peer that exposes /db/geoip
 func downloadFromPeer(ctx context.Context) error {
     u, err := url.Parse(dbURL)
     if err != nil {
         return err
     }
-    u.Path = "/getdb"
+    u.Path = "/db/geoip"
     resp, err := http.Get(u.String())
     if err != nil {
         return err
@@ -516,7 +516,7 @@ func main() {
     http.HandleFunc("/favicon.png", faviconHandler)
     http.HandleFunc("/openapi.json", openapiHandler)
     http.HandleFunc("/api/v1/geoip", geoIPHandler())
-    http.HandleFunc("/getdb", getDBHandler())
+    http.HandleFunc("/db/geoip", getDBHandler())
 
     srv := &http.Server{
         Addr:         listenAddr,

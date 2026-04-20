@@ -54,7 +54,7 @@ The server accepts `POST /api/v1/geoip` requests containing one or more IP addre
 - **No framework**: the HTTP layer uses only the standard library (`net/http`). Do not add a router or web framework.
 - **GeoIP library**: [`github.com/oschwald/geoip2-golang`](https://github.com/oschwald/geoip2-golang) is the primary non-stdlib dependency. It handles mmdb file reading and IP lookup. [`github.com/breml/rootcerts`](https://github.com/breml/rootcerts) is imported as a blank import to embed the Mozilla CA bundle, enabling HTTPS downloads from scratch-based containers.
 - **Hot database swap**: the active `*geoip2.Reader` is stored in a `sync/atomic.Value`. Database refreshes replace the value atomically, so in-flight requests are never interrupted and no lock is required on the read path.
-- **Two download modes**: when `GEOIP_DB_URL` points to `download.maxmind.com`, the server downloads and extracts the official GeoLite2-City tar.gz archive. Any other URL is treated as a peer `http2geoip` instance and the mmdb is fetched directly from its `/getdb` endpoint. If a peer download fails, the server retries silently every 5 minutes in a background goroutine.
+- **Two download modes**: when `GEOIP_DB_URL` points to `download.maxmind.com`, the server downloads and extracts the official GeoLite2-City tar.gz archive. Any other URL is treated as a peer `http2geoip` instance and the mmdb is fetched directly from its `/db/geoip` endpoint. If a peer download fails, the server retries silently every 5 minutes in a background goroutine.
 - **Daily scheduler**: a single `time.Timer`-based goroutine triggers `updateDB` every 24 hours at the configured UTC time. The scheduler is a no-op when `GEOIP_DB_URL` is empty.
 - **Batch lookups**: a single request may contain either one IP (`ip` field) or a list (`ips` field). The two fields are mutually exclusive. The maximum batch size is enforced server-side via `GEOIP_MAX_IPS` / `-max-ips`.
 
@@ -157,7 +157,7 @@ Each `Answer` object:
 | `GET`  | `/`             | Embedded interactive web UI                                               |
 | `GET`  | `/openapi.json` | OpenAPI 3.1 specification                                                 |
 | `GET`  | `/favicon.png`  | Application icon                                                          |
-| `GET`  | `/getdb`        | Serves the current mmdb file for peer-mode clients                        |
+| `GET`  | `/db/geoip`     | Serves the current mmdb file for peer-mode clients                        |
 
 ---
 
