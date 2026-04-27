@@ -1,6 +1,6 @@
 # http2geoip
 
-> **GeoIP-over-HTTP** — A lightweight, stateless HTTP gateway that exposes IP geolocation as a JSON REST API.
+> **GeoIP-over-HTTP** — A lightweight, stateless HTTP gateway that exposes IP geolocation database as a JSON REST API.
 
 Built in Go, it accepts a `POST` request with one or more IP addresses and returns structured geographic data sourced from a MaxMind GeoLite2 database. The binary embeds a static web UI and an OpenAPI specification, with zero runtime dependencies.
 
